@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import config from '../config.js';
 import UserCollectionManager from '../dao/userManagerMdb.js';
+import { isValidPassword, createHash } from '../utils.js';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.post('/register', async (req, res) => {
         const firstName = req.body.firstName;
         const lastName = req.body.lastName;
         const email = req.body.email;
-        const password = req.body.password;
+        const password = createHash(req.body.password);
         // const role = req.body.role;
 
         const checkUser = await userManager.getUser(email);
@@ -62,16 +63,18 @@ router.post('/register', async (req, res) => {
 
 });
 
+// router.get('/hash/:password', async (req,res) =>{
+//     res.status(200).send({ origin: config.SERVER, payload: createHash(req.params.password) });
+// });
+
 router.post('/login', async (req, res) => {
     try {
         // Recuperamos los campos que llegan del formulario
-        // Aquí luego se deberían agregar otras validaciones
         const { email, password } = req.body;
         
         // Esto simula datos existentes en base de datos
         // Reemplazar por llamada a método del manager que busque un usuario
         // filtrando por email y clave.
-        // POR EL MOMENTO, probar guardando la clave plana en la colección (abc123)
 
         // const savedFirstName = 'José';
         // const savedLastName = 'Perez';
@@ -87,14 +90,21 @@ router.post('/login', async (req, res) => {
         const lastName = checkUser["lastName"]
         const role = checkUser["role"]
 
-        if (email !== getEmail || password !== getPass) {
-            return res.status(401).send({ origin: config.SERVER, payload: 'Datos de acceso no válidos' });
+        // console.log(password)
+        // console.log(getPass)
+        
+
+        if (getEmail===email && isValidPassword(password,getPass)) {
+            req.session.user = { firstName: firstName, lastName: lastName, email: email, role: role };
+            res.redirect('/realTimeProducts');
+        }else{
+            res.status(401).send({ origin: config.SERVER, payload: 'Datos de acceso no válidos' });
         }
         
-        req.session.user = { firstName: firstName, lastName: lastName, email: email, role: role };
+        
         // res.status(200).send({ origin: config.SERVER, payload: 'Bienvenido!' });
         // res.redirect nos permite redireccionar a una plantilla en lugar de devolver un mensaje
-        res.redirect('/realTimeProducts');
+        
     } catch (err) {
         res.status(500).send({ origin: config.SERVER, payload: null, error: err.message });
     }
