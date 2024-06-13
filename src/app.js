@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 //import FileStore from 'session-file-store';
 import MongoStore from 'connect-mongo';
+import passport from 'passport';
 
 
 import cookieRouter from './routes/cookies.routes.js';
@@ -37,6 +38,9 @@ app.use(session({
     resave: true,
     saveUninitialized: true
 }));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.engine('handlebars', handlebars.engine());
 app.set('views', `${config.DIRNAME}/views`);

@@ -3,10 +3,14 @@ import { Router } from 'express';
 import config from '../config.js';
 import UserCollectionManager from '../dao/userManagerMdb.js';
 import { isValidPassword, createHash } from '../utils.js';
+import passport from 'passport';
+import initAuthStrategies from '../auth/passport.config.js';
 
 const router = Router();
 
 const userManager = new UserCollectionManager()
+
+initAuthStrategies();
 
 /**
  * Al activar el módulo express-session (ver app.js), aparece un objeto
@@ -105,6 +109,27 @@ router.post('/login', async (req, res) => {
         // res.status(200).send({ origin: config.SERVER, payload: 'Bienvenido!' });
         // res.redirect nos permite redireccionar a una plantilla en lugar de devolver un mensaje
         
+    } catch (err) {
+        res.status(500).send({ origin: config.SERVER, payload: null, error: err.message });
+    }
+});
+
+router.post('/pplogin', passport.authenticate('login', { failureRedirect: `/login?error=${encodeURI('Usuario o clave no válidos')}`}), async (req, res) => {
+    try {
+        req.session.user = req.user;
+        res.redirect('/realTimeProducts');
+    } catch (err) {
+        res.status(500).send({ origin: config.SERVER, payload: null, error: err.message });
+    }
+});
+
+router.get('/ghlogin', passport.authenticate('ghlogin',  {scope: ['user:email']}), async (req, res) => {
+});
+
+router.get('/githublogin', passport.authenticate('ghlogin', {failureRedirect: `/login?error=${encodeURI('Error al identificar con Github')}`}), async (req, res) => {
+    try {
+        req.session.user = req.user // req.user es inyectado AUTOMATICAMENTE por Passport al parsear el done()
+        res.redirect('/realTimeProducts');
     } catch (err) {
         res.status(500).send({ origin: config.SERVER, payload: null, error: err.message });
     }
